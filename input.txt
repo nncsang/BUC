@@ -1,0 +1,4 @@
+Table	Blue	124
+Table	Red	223
+Chair	Blue	101
+Chair	Red	210
