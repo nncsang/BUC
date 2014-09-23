@@ -31,7 +31,7 @@ public class BUC {
 		for(int i = 0; i < numDims; i++)
 			dataCount.add(0);
 		
-		process(input, 0);
+		process(input, 0, 0);
 	}
 	
 	public int aggregate(String[] input){
@@ -47,7 +47,19 @@ public class BUC {
 		
 	}
 	
-	public void process(String[] input, int dim){
+	public static String join(String[] list, String delim) {
+	    int len = list.length;
+	    if (len == 0)
+	        return "";
+	    StringBuilder sb = new StringBuilder(list[0].toString());
+	    for (int i = 1; i < len; i++) {
+	        sb.append(delim);
+	        sb.append(list[i].toString());
+	    }
+	    return sb.toString();
+	}
+	
+	public void process(String[] input, int origin, int dim){
 		int result = aggregate(input);
 		if (input.length == 1){
 			reader.initWithString(input[0]);
@@ -61,7 +73,22 @@ public class BUC {
 		else{
 			if (dim <= numDims){
 				reader.initWithString(input[0]);
-				System.out.println("("+  reader.getValueByAttributeName(attributeNames[dim - 1]) + ",*) " + result);
+				
+				String[] region = new String[numDims];
+				for(int i = 0; i < origin; i++){
+					region[i] = "*";
+				}
+				
+				for(int i = origin; i < dim; i++){
+					region[i] = reader.getValueByAttributeName(attributeNames[i]);
+				}
+				
+				for(int i = dim; i < numDims; i++){
+					region[i] = "*";
+				}
+				
+				
+				System.out.println("("+  join(region, ",") + ") " + result);
 			}
 		}
 		
@@ -81,7 +108,7 @@ public class BUC {
 							newInput.add(input[j]);
 						}	
 					}
-					process(newInput.toArray(new String[0]), i + 1);
+					process(newInput.toArray(new String[0]), i, i + 1);
 				}
 			}
 		}
@@ -118,6 +145,5 @@ public class BUC {
 		
 		String[] attributeNames = {"Item", "Color"}; 
 		BUC buc = new BUC(input.toArray(new String[0]), attributeNames, "Quantity", 2, 0, new InventoryReader());
-		
 	}
 }
