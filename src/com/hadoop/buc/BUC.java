@@ -31,7 +31,7 @@ public class BUC {
 		for(int i = 0; i < numDims; i++)
 			dataCount.add(0);
 		
-		process(input, 0, 0);
+		process(input, 0, 0, 0);
 	}
 	
 	public int aggregate(String[] input){
@@ -41,10 +41,6 @@ public class BUC {
 			sum += Integer.parseInt(reader.getValueByAttributeName(measuredAttributeName));
 		}
 		return sum;
-	}
-	
-	public void writeAncestors(String input, int dim){
-		
 	}
 	
 	public static String join(String[] list, String delim) {
@@ -59,17 +55,16 @@ public class BUC {
 	    return sb.toString();
 	}
 	
-	public void process(String[] input, int origin, int dim){
+	public void process(String[] input, int mainOrigin, int origin, int dim){
 		int result = aggregate(input);
-		if (input.length == 1){
-			reader.initWithString(input[0]);
-			System.out.println("("+  reader.getValueByAttributeName(attributeNames[dim - 2]) + "," + reader.getValueByAttributeName(attributeNames[dim - 1]) + ") " + result);
-			return;
+		
+		if (dim == 0){
+			String[] region = new String[numDims];
+			for(int i = 0; i < numDims; i++){
+				region[i] = "*";
+			}
+			System.out.println("(" + join(region, ",") + ") " + result);
 		}
-		
-		
-		if (dim == 0)
-			System.out.println("(*, *) " + result);
 		else{
 			if (dim <= numDims){
 				reader.initWithString(input[0]);
@@ -92,14 +87,14 @@ public class BUC {
 			}
 		}
 		
-		for(int i = dim; i < numDims;i++){
+		for(int i = dim; i < numDims; i++){
 			Map<String, Integer> partitions = partition(input, i);
 			Set<Entry<String, Integer>> entries = partitions.entrySet();
 			for(Entry<String, Integer> entry : entries){
 				String key = entry.getKey();
 				int value = entry.getValue();
 				
-				if (value > minsup){
+				if (value >= minsup){
 					List<String> newInput = new ArrayList<String>();
 					for(int j = 0; j < input.length; j++){
 						reader.initWithString(input[j]);
@@ -108,9 +103,12 @@ public class BUC {
 							newInput.add(input[j]);
 						}	
 					}
-					process(newInput.toArray(new String[0]), i, i + 1);
+					
+					process(newInput.toArray(new String[0]), -1, origin, i + 1);
 				}
 			}
+			if (mainOrigin == 0)
+				origin = i + 1;
 		}
 	}
 	
@@ -143,7 +141,7 @@ public class BUC {
 			return;
 		}
 		
-		String[] attributeNames = {"Item", "Color"}; 
-		BUC buc = new BUC(input.toArray(new String[0]), attributeNames, "Quantity", 2, 0, new InventoryReader());
+		String[] attributeNames = {"Item", "Color", "Store"}; 
+		BUC buc = new BUC(input.toArray(new String[0]), attributeNames, "Quantity", 3, 0, new InventoryReader());
 	}
 }

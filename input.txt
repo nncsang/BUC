@@ -1,9 +1,9 @@
-Table	Blue	124
-Table	Red	223
-Table	White	1
-Chair	Blue	101
-Chair	Red	210
-Chair	White	10
-Glass	Red	0
-Glass	Blue	10
-Glass	White	20
+Table	Blue	A	124
+Table	Red	A	223
+Table	White	B	1
+Chair	Blue	A	101
+Chair	Red	D	210
+Chair	White	C	10
+Glass	Red	D	10
+Glass	Blue	A	10
+Glass	White	C	20

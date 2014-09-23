@@ -16,8 +16,10 @@ public class InventoryReader implements InputReader{
 			return sources[0];
 		if (name.equals("Color"))
 			return sources[1];
-		if (name.equals("Quantity"))
+		if (name.equals("Store"))
 			return sources[2];
+		if (name.equals("Quantity"))
+			return sources[3];
 		
 		return null;
 	}
