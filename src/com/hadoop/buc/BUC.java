@@ -43,18 +43,26 @@ public class BUC {
 			cubeGroups.clear();
 		else
 			cubeGroups = new TreeMap<String, Integer>();
-			
-		processCubeGroups(input, 0, 0, 0);
+		
+		List<Integer> mask = new ArrayList<Integer>();
+		for(int i = 0; i < numDims; i++)
+			mask.add(0);
+		
+		processCubeGroups(input, 0, 0, 0, mask);
 		return cubeGroups;
 	}
-	
+
 	public Set<String> cubeRegions(){
 		if (cubeRegions != null && cubeRegions.isEmpty())
 			cubeRegions.clear();
 		else
 			cubeRegions = new TreeSet<String>();
 		
-		processCubeRegions(0, 0, 0);
+		List<Integer> mask = new ArrayList<Integer>();
+		for(int i = 0; i < numDims; i++)
+			mask.add(0);
+		
+		processCubeRegions(0, 0, 0, mask);
 		return cubeRegions;
 	}
 	
@@ -91,43 +99,21 @@ public class BUC {
 	    return sb.toString();
 	}
 	
-	public void processCubeGroups(String[] input, int mainOrigin, int origin, int dim){
+	public void processCubeGroups(String[] input, int mainOrigin, int origin, int dim, List<Integer> mask){
 		int result = aggregate(input);
+		addGroup(mask, input[0], result);
 		
-		if (dim == 0){
-			String[] region = new String[numDims];
-			for(int i = 0; i < numDims; i++){
-				region[i] = "*";
-			}
-			
-			String key = join(region, ",");
-			if (!cubeGroups.containsKey(key))
-				cubeGroups.put(key, result);
-		}
-		else{
-			if (dim <= numDims){
-				reader.initWithString(input[0]);
-				
-				String[] region = new String[numDims];
-				for(int i = 0; i < origin; i++){
-					region[i] = "*";
-				}
-				
-				for(int i = origin; i < dim; i++){
-					region[i] = reader.getValueByAttributeName(attributeNames[i]);
-				}
-				
-				for(int i = dim; i < numDims; i++){
-					region[i] = "*";
-				}
-			
-				String key = join(region, ",");
-				if (!cubeGroups.containsKey(key))
-					cubeGroups.put(key, result);
-			}
+		if (dim < numDims){
+			mask.set(dim, 1);
 		}
 		
 		for(int i = dim; i < numDims; i++){
+			if (mainOrigin == 0){
+				for(int k = 0; k < numDims; k++)
+					mask.set(k, 0);
+				mask.set(origin, 1);
+			}
+			
 			Map<String, Integer> partitions = partition(input, i);
 			Set<Entry<String, Integer>> entries = partitions.entrySet();
 			for(Entry<String, Integer> entry : entries){
@@ -144,7 +130,8 @@ public class BUC {
 						}	
 					}
 					
-					processCubeGroups(newInput.toArray(new String[0]), -1, origin, i + 1);
+					List<Integer> maskX = new ArrayList(mask);
+					processCubeGroups(newInput.toArray(new String[0]), -1, origin, i + 1, maskX);
 				}
 			}
 			if (mainOrigin == 0)
@@ -152,38 +139,68 @@ public class BUC {
 		}
 	}
 	
-	public void processCubeRegions(int mainOrigin, int origin, int dim){
+	public void addRegion(List<Integer> mask){
+		Iterator<Integer> itor = mask.iterator();
+		List<String> region = new ArrayList<String>();
 		
-		if (dim == 0){
-			String[] region = new String[numDims];
-			for(int i = 0; i < numDims; i++){
-				region[i] = "*";
-			}
-			cubeRegions.add(join(region, ","));
+		int index = 0;
+		while(itor.hasNext()){
+			if (itor.next() == 0)
+				region.add("*");
+			else
+				region.add(attributeNames[index]);
+			index++;
 		}
-		else{
-			if (dim <= numDims){
-				String[] region = new String[numDims];
-				for(int i = 0; i < origin; i++){
-					region[i] = "*";
-				}
-				
-				for(int i = origin; i < dim; i++){
-					region[i] = attributeNames[i];
-				}
-				
-				for(int i = dim; i < numDims; i++){
-					region[i] = "*";
-				}
-			
-				cubeRegions.add(join(region, ","));
-			}
+		
+		cubeRegions.add(join(region, ","));
+		//System.out.println(join(region, ","));
+	}
+	
+	public void addGroup(List<Integer> mask, String record, int measure){
+		Iterator<Integer> itor = mask.iterator();
+		List<String> region = new ArrayList<String>();
+		reader.initWithString(record);
+		int index = 0;
+		while(itor.hasNext()){
+			if (itor.next() == 0)
+				region.add("*");
+			else
+				region.add(reader.getValueByAttributeName(attributeNames[index]));
+			index++;
 		}
+		
+		String key = join(region, ",");
+		if (!cubeGroups.containsKey(key))
+			cubeGroups.put(key, measure);
+		//System.out.println(join(region, ",") + " " + measure);
+	}
+	
+	public void processCubeRegions(int mainOrigin, int origin, int dim, List<Integer> mask){
+		addRegion(mask);
 		
 		for(int i = dim; i < numDims; i++){
-			processCubeRegions(-1, origin, i + 1);
-			if (mainOrigin == 0)
+			if (mainOrigin == 0 && i == 0){
+				mask.set(0, 1);
+				addRegion(mask);
+			}
+			
+			for(int j = i + 1; j < numDims; j++){
+				if (i != j){
+					mask.set(j, 1);
+					processCubeRegions(-1, origin, j, mask);
+					mask.set(j, 0);
+				}
+			}
+			
+			if (mainOrigin == 0){
 				origin = i + 1;
+				if (origin < numDims){
+					for(int k = 0; k < numDims; k++)
+						mask.set(k, 0);
+					mask.set(origin, 1);
+					addRegion(mask);
+				}
+			}
 		}
 	}
 	
